@@ -39,7 +39,7 @@ graph TD
 
 ## 🔐 Algoritmo de Firma Tuya API V2 (Core Criptográfico)
 
-La comunicación directa con las APIs oficiales de Tuya requiere la firma criptográfica de cada petición HTTPS para evitar ataques de intermediarios (Replay Attacks). El archivo [tuya_bridge.js](file:///C:/Users/USUARIO/.gemini/antigravity-ide/scratch/SmartHome_HMI/tuya_bridge.js) implementa el algoritmo estándar de Tuya:
+La comunicación directa con las APIs oficiales de Tuya requiere la firma criptográfica de cada petición HTTPS para evitar ataques de intermediarios (Replay Attacks). El archivo `tuya_bridge.js` implementa el algoritmo estándar de Tuya:
 
 1. **Hash de Cuerpo de Petición (Content-SHA256)**: Se genera un hash SHA256 del cuerpo JSON del mensaje (si no hay cuerpo, se genera del string vacío).
 2. **String to Sign**: Se concatenan las siguientes cadenas separadas por saltos de línea (`\n`):
@@ -163,3 +163,72 @@ Para controlar dispositivos reales:
 4. En la interfaz HMI web, haz clic en **Tuya API Config** (esquina superior derecha).
 5. Cambia el modo a **Servidor Puente Real (Live Tuya API)**, ingresa tus credenciales y selecciona el endpoint regional correcto.
 6. Haz clic en **Guardar Configuración**. El puente comenzará a sincronizar tus dispositivos en tiempo real de forma automática.
+
+---
+
+## 📌 Roadmap Técnico y Plan de Trabajo
+
+Este plan describe los hitos clave para la evolución tecnológica de la interfaz HMI y el servidor puente. Los dos pilares principales son la migración hacia **control local de dispositivos (TuyAPI)** para eliminar la latencia de la nube y la implementación de **conexión bidireccional en tiempo real (WebSockets / MQTT)** para sustituir el polling periódico.
+
+```mermaid
+gantt
+    title Plan de Implementación de Mejoras Domóticas
+    dateFormat  YYYY-MM-DD
+    section Fase 1: Control Local (TuyAPI)
+    Extracción de Local Keys :active, 2026-05-26, 3d
+    Integración TCP local en Bridge : 3d
+    section Fase 2: Tiempo Real (WebSockets)
+    Servidor WS en tuya_bridge.js : 3d
+    Cliente WS en index.html (Sin Polling) : 2d
+    section Fase 3: Gateway MQTT
+    Despliegue de tuya-mqtt / Bróker : 4d
+    Conexión cliente MQTT : 3d
+    section Fase 4: Optimización y UX
+    Animaciones de mímicos y gráficas : 3d
+    Pruebas integrales y cobertura de fallos : 2d
+```
+
+### 📡 Fase 1: Migración a Control Local (TuyAPI)
+*Objetivo: Controlar los dispositivos dentro de la red local, eliminando la dependencia de la API en la nube de Tuya y reduciendo la latencia a menos de 100 milisegundos.*
+
+- **Extracción de credenciales locales (`Local Keys`)**:
+  - Recopilar el par `Device ID` y `Local Key` para cada uno de los dispositivos IoT vinculados mediante el portal de desarrollo de Tuya.
+  - Almacenar las credenciales en un archivo estructurado local `tuya_keys.json`.
+- **Implementación de TuyAPI en el servidor puente**:
+  - Instalar la dependencia `@codetheweb/tuyapi` en el proyecto Node.js (`npm install @codetheweb/tuyapi`).
+  - Reemplazar la lógica de solicitud HTTP Cloud (`makeTuyaRequest`) en `tuya_bridge.js` por sockets de conexión directa TCP.
+- **Gestión de estados offline y concurrencia**:
+  - Implementar lógica para liberar los sockets TCP cuando no se usen (para evitar colisiones de conexión).
+  - Diseñar un mecanismo de fallback automático hacia la nube de Tuya o datos locales simulados si falla la conexión local.
+
+### 🔄 Fase 2: Conexión Bidireccional con WebSockets (Event-Driven)
+*Objetivo: Reemplazar las consultas HTTP repetitivas (polling de 5 segundos) por una comunicación persistente basada en eventos para refrescar la interfaz instantáneamente.*
+
+- **Servidor WebSocket en `tuya_bridge.js`**:
+  - Integrar la biblioteca `ws` de Node.js (`npm install ws`) en el servidor puente, corriendo en el puerto 3000.
+  - Diseñar el esquema de mensajes JSON para eventos de actualización de estados (`device_status_update`) y comandos de control (`device_command`).
+- **Cliente WebSocket en el Frontend (`index.html`)**:
+  - Eliminar la consulta periódica en JavaScript y establecer una conexión activa `new WebSocket("ws://localhost:3000")`.
+  - Crear mecanismos de reconexión automática en caso de caída del servidor del puente.
+- **Sincronización instantánea de eventos**:
+  - Propagar cambios desde el socket local TCP de TuyAPI hacia todos los navegadores conectados mediante WebSockets en tiempo real.
+
+### 🔀 Fase 3: Puerta de Enlace Estándar con MQTT (Opcional/Avanzado)
+*Objetivo: Integrar el ecosistema con brókers de mensajería estándar para compatibilidad con otros controladores como Node-RED o Home Assistant.*
+
+- **Configuración del Bróker MQTT**:
+  - Desplegar una instancia local de **Eclipse Mosquitto** y habilitar el transporte WebSockets.
+- **Implementación de `tuya-mqtt`**:
+  - Utilizar el puente de código abierto `tuya-mqtt` para sincronizar los dispositivos locales con el bróker de forma estandarizada.
+- **Adaptación del Frontend**:
+  - Conectar el dashboard al bróker utilizando `Paho MQTT` en JavaScript.
+
+### 🎨 Fase 4: Optimización Visual de Interfaz y Gráficos (UX/UI)
+*Objetivo: Dotar a la interfaz de animaciones fluidas y visualizaciones profesionales que reflejen las actualizaciones instantáneas de estado.*
+
+- **Transiciones fluidas en el Mímico SVG**:
+  - Añadir transiciones CSS suaves en los polígonos del mapa para animar los cambios de iluminación.
+- **Gráficas dinámicas de series temporales**:
+  - Agregar transiciones fluidas en los trazados de los vectores SVG (`path` element) del historial dinámico en el modal de detalles.
+- **Alertas visuales de pérdida de señal**:
+  - Mostrar insignias de advertencia y oscurecer áreas si un dispositivo pasa a estado offline.
