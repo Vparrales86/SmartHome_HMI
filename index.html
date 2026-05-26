@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMI - Domótica & Control Residencial</title>
+    <meta name="description" content="Interfaz de Monitoreo y Control para Casa Inteligente con Integración Tuya / Smart Life">
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #0A0D14;
+            --bg-card: rgba(18, 25, 41, 0.8);
+            --bg-control: #182235;
+            --border-card: rgba(255, 255, 255, 0.08);
+            
+            --accent-cyan: #00F2FE;
+            --accent-green: #00FF87;
+            --accent-red: #FF3366;
+            --accent-yellow: #FFD000;
+            --accent-blue: #3B82F6;
+            --text-main: #E2E8F0;
+            --text-muted: #64748B;
+            
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(0, 242, 254, 0.05) 0px, transparent 50%);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: rgba(10, 15, 25, 0.85);
+            border-bottom: 1px solid var(--border-card);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #FFF, #94A3B8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .system-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-settings {
+            background: var(--bg-control);
+            border: 1px solid var(--border-card);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-settings:hover {
+            background: #23314B;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+
+        .btn-settings svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .meta-badge {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-card);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .meta-badge span {
+            font-weight: 600;
+        }
+
+        /* GRID LAYOUT */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 20px;
+            padding: 24px;
+            flex-grow: 1;
+            max-width: 1920px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-card);
+            padding-bottom: 12px;
+        }
+
+        .panel-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        /* SVG HOUSE PLAN (MÍMICO) */
+        .mimic-view {
+            background: #06090F;
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 520px;
+            padding: 20px;
+        }
+
+        .house-svg {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            max-height: 500px;
+        }
+
+        /* Room Styling */
+        .room-polygon {
+            fill: rgba(30, 41, 59, 0.15);
+            stroke: #475569;
+            stroke-width: 2.5;
+            transition: all 0.3s ease;
+        }
+
+        .room-polygon:hover {
+            fill: rgba(30, 41, 59, 0.3);
+        }
+
+        .room-label {
+            fill: #94A3B8;
+            font-size: 11px;
+            font-weight: 700;
+            text-anchor: middle;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Room active glows (e.g. Light on) */
+        .room-glow-light {
+            fill: rgba(251, 191, 36, 0.07);
+        }
+
+        .room-glow-ac {
+            fill: rgba(0, 242, 254, 0.04);
+        }
+
+        /* Hotspot Buttons overlayed on blueprint */
+        .hotspot {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hotspot circle {
+            fill: #1E293B;
+            stroke: #475569;
+            stroke-width: 2;
+            transition: all 0.2s ease;
+        }
+
+        .hotspot:hover circle {
+            transform: scale(1.15);
+            stroke: var(--accent-cyan);
+        }
+
+        .hotspot svg {
+            pointer-events: none;
+        }
+
+        .hotspot.active circle {
+            fill: rgba(251, 191, 36, 0.15);
+            stroke: var(--accent-yellow);
+        }
+
+        .hotspot.active svg {
+            color: var(--accent-yellow);
+            filter: drop-shadow(0 0 5px var(--accent-yellow));
+        }
+
+        .hotspot.lock.active circle {
+            fill: rgba(239, 68, 68, 0.1);
+            stroke: var(--accent-red);
+        }
+        .hotspot.lock.active svg {
+            color: var(--accent-red);
+        }
+
+        .hotspot.lock.unlocked circle {
+            fill: rgba(16, 185, 129, 0.1);
+            stroke: var(--accent-green);
+        }
+        .hotspot.lock.unlocked svg {
+            color: var(--accent-green);
+        }
+
+        .hotspot.ac.active circle {
+            fill: rgba(0, 242, 254, 0.1);
+            stroke: var(--accent-cyan);
+        }
+        .hotspot.ac.active svg {
+            color: var(--accent-cyan);
+        }
+
+        /* SIDEBAR DEVICE LIST */
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 520px;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .device-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-cyan);
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .device-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .device-room {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .device-status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+        }
+
+        .device-status-badge.on {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .device-status-badge.off {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+        }
+
+        .device-status-badge.locked {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+        }
+
+        .device-status-badge.unlocked {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        /* MODAL POPUPS */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            width: 480px;
+            max-width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-card);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .btn-close-modal {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .btn-close-modal:hover {
+            color: var(--text-main);
+        }
+
+        .modal-card-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .device-details-meta {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-card);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .device-details-meta span {
+            color: var(--text-main);
+        }
+
+        /* Interactive controls in modal */
+        .modal-control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-card);
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        .modal-control-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Range/AC Controls */
+        .ac-temp-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn-temp {
+            background: var(--bg-control);
+            border: 1px solid var(--border-card);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.15s;
+        }
+
+        .btn-temp:hover {
+            background: #23314B;
+            border-color: var(--accent-cyan);
+        }
+
+        .temp-display {
+            font-family: var(--font-code);
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            min-width: 65px;
+            text-align: center;
+        }
+
+        /* Chart in modal */
+        .modal-chart-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 12px;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .modal-chart-svg {
+            width: 100%;
+            height: 120px;
+        }
+
+        /* CONFIGURATION MODAL */
+        .config-modal {
+            width: 500px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .form-group input, .form-group select {
+            background: var(--bg-control);
+            border: 1px solid var(--border-card);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent-cyan), #00A6FE);
+            border: none;
+            color: #000;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Toggle Switches */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2D3748;
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--border-card);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-title">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="var(--accent-cyan)" stroke-width="2" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <h1>HMI - SMART HOME DASHBOARD</h1>
+        </div>
+        
+        <div class="system-meta">
+            <div class="meta-badge">INTEGRACIÓN: <span id="sync-mode-badge" style="color: var(--accent-yellow);">MOCK MODE</span></div>
+            <button class="btn-settings" onclick="openConfigModal()">
+                <svg viewBox="0 0 24 24"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3"/></svg>
+                Tuya API Config
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT GRID -->
+    <div class="dashboard-container">
+        
+        <!-- MÍMICO INTERACTIVO (IZQUIERDA) -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor"/><path d="M9 3v18M3 12h18"/></svg>
+                    Plano de Distribución Doméstica (Mímico)
+                </div>
+            </div>
+            
+            <div class="mimic-view">
+                <!-- SVG HOUSE BLUEPRINT -->
+                <svg class="house-svg" viewBox="0 0 800 500">
+                    <defs>
+                        <!-- Glow filter for lights -->
+                        <filter id="yellow-glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <!-- --- ROOM BOUNDARIES --- -->
+                    <!-- Habitación Principal (top left) -->
+                    <polygon id="room-hab" class="room-polygon" points="20,20 280,20 280,180 20,180" />
+                    <!-- Baño Principal (top center) -->
+                    <polygon id="room-bano" class="room-polygon" points="280,20 380,20 380,130 280,130" />
+                    <!-- Habitación 2 (top mid-right) -->
+                    <polygon id="room-hab2" class="room-polygon" points="380,20 500,20 500,130 380,130" />
+                    <!-- Oficina (top right) -->
+                    <polygon id="room-oficina" class="room-polygon" points="500,20 650,20 650,130 500,130" />
+                    <!-- Pasillo (Hallway) -->
+                    <polygon id="room-pasillo" class="room-polygon" points="280,130 650,130 650,180 280,180" />
+                    <!-- Lavadero y Cafetería (bottom left) -->
+                    <polygon id="room-lavadero" class="room-polygon" points="20,180 280,180 280,480 20,480" />
+                    <!-- Sala de Estar / Comedor / TV (bottom center) -->
+                    <polygon id="room-sala" class="room-polygon" points="280,180 650,180 650,480 280,480" />
+                    <!-- Patio (right side) -->
+                    <polygon id="room-patio" class="room-polygon" points="650,20 780,20 780,480 650,480" />
+                    <!-- Calle / Entrada (outdoor bottom strip) -->
+                    <polygon id="room-calle" class="room-polygon" points="20,480 780,480 780,500 20,500" style="stroke-dasharray: 4 4; fill: rgba(255,255,255,0.01);" />
+
+                    <!-- --- ROOM LABELS --- -->
+                    <text x="150" y="80" class="room-label">Hab. Principal</text>
+                    <text x="330" y="75" class="room-label">Baño</text>
+                    <text x="440" y="75" class="room-label">Habitación 2</text>
+                    <text x="575" y="75" class="room-label">Oficina</text>
+                    <text x="465" y="155" class="room-label">Pasillo</text>
+                    <text x="150" y="330" class="room-label">Cafetería & Lavadero</text>
+                    <text x="465" y="330" class="room-label">Sala Principal</text>
+                    <text x="715" y="240" class="room-label" transform="rotate(90 715 240)">Patio Exterior</text>
+                    <text x="250" y="495" class="room-label" font-size="8" fill="var(--text-muted)">Calle / Acceso Exterior</text>
+
+                    <!-- --- INTERACTIVE HOTSPOTS --- -->
+                    
+                    <!-- Sensor Temp & Hum (Habitación) -->
+                    <g id="hotspot-eb8a029eac3849c00ao5lr" class="hotspot" transform="translate(80, 100)" onclick="openDevice('eb8a029eac3849c00ao5lr')">
+                        <circle cx="0" cy="0" r="22" />
+                        <g transform="translate(-10, -10)">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+                        </g>
+                        <!-- Small text pill overlay -->
+                        <rect x="-35" y="26" width="70" height="15" rx="3" fill="#111827" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                        <text id="txt-hab-temp" x="0" y="37" fill="var(--accent-cyan)" font-size="9" font-family="monospace" text-anchor="middle">21.5°C</text>
+                    </g>
+
+                    <!-- Aire Acondicionado (Habitación) -->
+                    <g id="hotspot-eb81eb213ea6311bc5f4x9" class="hotspot ac" transform="translate(180, 60)" onclick="openDevice('eb81eb213ea6311bc5f4x9')">
+                        <circle cx="0" cy="0" r="20" />
+                        <g transform="translate(-9, -9)">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Habitación Principal (switch) -->
+                    <g id="hotspot-ebb8c6db4c4b3bb1eek3s" class="hotspot light" transform="translate(180, 120)" onclick="openDevice('ebb8c6db4c4b3bb1eek3s')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Baño -->
+                    <g id="hotspot-ebfc0dbec9868bd91fn21v" class="hotspot light" transform="translate(330, 75)" onclick="openDevice('ebfc0dbec9868bd91fn21v')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Habitación 2 -->
+                    <g id="hotspot-ebec82a43c5ca0b656c52g" class="hotspot light" transform="translate(440, 75)" onclick="openDevice('ebec82a43c5ca0b656c52g')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Oficina -->
+                    <g id="hotspot-ebd912733b8b495a291hfj" class="hotspot light" transform="translate(575, 75)" onclick="openDevice('ebd912733b8b495a291hfj')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Pasillo -->
+                    <g id="hotspot-eb9be77ecae3064837yxoz" class="hotspot light" transform="translate(465, 155)" onclick="openDevice('eb9be77ecae3064837yxoz')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Cafetería y Lavadero -->
+                    <g id="hotspot-ebe3a2236d8fb41192cbkj" class="hotspot light" transform="translate(150, 260)" onclick="openDevice('ebe3a2236d8fb41192cbkj')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Sala Principal -->
+                    <g id="hotspot-ebcfafbca9ef2a314c5ziv" class="hotspot light" transform="translate(320, 260)" onclick="openDevice('ebcfafbca9ef2a314c5ziv')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Patio -->
+                    <g id="hotspot-eb026ce6b853f58504jjax" class="hotspot light" transform="translate(715, 140)" onclick="openDevice('eb026ce6b853f58504jjax')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Baños 2 (Auxiliar Patio / Pasillo) -->
+                    <g id="hotspot-eb6d23ecf9be9e3fd1aydl" class="hotspot light" transform="translate(715, 260)" onclick="openDevice('eb6d23ecf9be9e3fd1aydl')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- TV (Sala de Estar) -->
+                    <g id="hotspot-eb336cd31719ca0f66lqkg" class="hotspot TV" transform="translate(465, 380)" onclick="openDevice('eb336cd31719ca0f66lqkg')">
+                        <circle cx="0" cy="0" r="20" />
+                        <g transform="translate(-9, -9)">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Control IR Universal (Sala de Estar) -->
+                    <g id="hotspot-eb45fc166a2b021df7qd7c" class="hotspot remote" transform="translate(370, 380)" onclick="openDevice('eb45fc166a2b021df7qd7c')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Cerradura Principal (Entrance) -->
+                    <g id="hotspot-eb7cf6af22271b7086dama" class="hotspot lock active" transform="translate(465, 480)" onclick="openDevice('eb7cf6af22271b7086dama')">
+                        <circle cx="0" cy="0" r="20" />
+                        <g id="svg-lock-icon" transform="translate(-8, -9)" style="color: var(--accent-red);">
+                            <svg viewBox="0 0 24 24" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </g>
+                    </g>
+
+                    <!-- Luz Calle (Entrance outdoor) -->
+                    <g id="hotspot-eb4164efd22d7fd73ffg9j" class="hotspot light" transform="translate(540, 480)" onclick="openDevice('eb4164efd22d7fd73ffg9j')">
+                        <circle cx="0" cy="0" r="18" />
+                        <g transform="translate(-8, -8)">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .6 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5M9 18h6M10 22h4"/></svg>
+                        </g>
+                    </g>
+
+                </svg>
+            </div>
+        </div>
+
+        <!-- LISTADO DE DISPOSITIVOS & ESTADOS (DERECHA) -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Dispositivos Tuya
+                </div>
+            </div>
+            
+            <div class="device-list" id="device-list-dom">
+                <!-- Device cards dynamically inserted here -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- DETAIL / CONTROL MODAL -->
+    <div class="modal-overlay" id="device-modal" onclick="closeDeviceModalOnOutside(event)">
+        <div class="modal-card">
+            <div class="modal-card-header">
+                <h3 class="modal-card-title" id="m-device-name">BAÑO</h3>
+                <button class="btn-close-modal" onclick="closeDeviceModal()">&times;</button>
+            </div>
+            
+            <div class="modal-card-body">
+                <!-- Device Technical Specs -->
+                <div class="device-details-meta">
+                    <div>PRODUCTO: <span id="m-device-product">HG067-T34</span></div>
+                    <div>DEVICE ID: <span id="m-device-id">ebfc...v21v</span></div>
+                    <div>ESTADO API: <span id="m-device-api-status" style="color: var(--accent-green);">Conectado</span></div>
+                </div>
+
+                <!-- Device Controls (Switches / Custom AC controls) -->
+                <div id="m-control-container">
+                    <!-- Dynamic control fields go here -->
+                </div>
+
+                <!-- Dynamic Live Trend Chart -->
+                <div class="panel-header" style="border-top: 1px solid var(--border-card); padding-top: 12px; margin-top: 10px;">
+                    <div class="panel-title" style="font-size: 0.8rem;">Historial de Comportamiento</div>
+                </div>
+                
+                <div class="modal-chart-container">
+                    <svg class="modal-chart-svg" viewBox="0 0 400 120" id="modal-chart-element">
+                        <!-- Grid Lines -->
+                        <line x1="20" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.05)" />
+                        <line x1="20" y1="60" x2="380" y2="60" stroke="rgba(255,255,255,0.05)" />
+                        <line x1="20" y1="100" x2="380" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+                        
+                        <!-- Chart Line -->
+                        <path id="modal-chart-path" d="" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5" />
+                        <!-- Area Fill -->
+                        <path id="modal-chart-area" d="" fill="rgba(0, 242, 254, 0.05)" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TUYA API CONFIGURATION MODAL -->
+    <div class="modal-overlay" id="config-modal" onclick="closeConfigModalOnOutside(event)">
+        <div class="modal-card config-modal">
+            <div class="modal-card-header">
+                <h3 class="modal-card-title">Configuración Tuya Cloud Developer</h3>
+                <button class="btn-close-modal" onclick="closeConfigModal()">&times;</button>
+            </div>
+            
+            <div class="modal-card-body">
+                <div class="form-group">
+                    <label>Modo de Funcionamiento</label>
+                    <select id="cfg-mode" onchange="toggleConfigFields()">
+                        <option value="mock">Simulación local (Mock Mode)</option>
+                        <option value="live">Servidor Puente Real (Live Tuya API)</option>
+                    </select>
+                </div>
+
+                <div id="live-config-fields" style="display: none; flex-direction: column; gap: 14px;">
+                    <div class="form-group">
+                        <label>Tuya Client ID (Access ID)</label>
+                        <input type="text" id="cfg-client-id" placeholder="Ingresa Access ID">
+                    </div>
+                    <div class="form-group">
+                        <label>Tuya Client Secret (Access Secret)</label>
+                        <input type="password" id="cfg-client-secret" placeholder="Ingresa Access Secret">
+                    </div>
+                    <div class="form-group">
+                        <label>Endpoint URL (Región)</label>
+                        <select id="cfg-endpoint">
+                            <option value="https://openapi.tuyaus.com">América (openapi.tuyaus.com)</option>
+                            <option value="https://openapi.tuyaeu.com">Europa (openapi.tuyaeu.com)</option>
+                            <option value="https://openapi.tuyacn.com">China (openapi.tuyacn.com)</option>
+                            <option value="https://openapi.tuyain.com">India (openapi.tuyain.com)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Esquema de la App (Tuya App Schema)</label>
+                        <input type="text" id="cfg-schema" placeholder="ej. smartlife">
+                    </div>
+                </div>
+
+                <button class="btn-submit" style="margin-top: 10px;" onclick="saveConfig()">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOMÓTICA ENGINE SCRIPT -->
+    <script>
+        // --- DEVICE STATE DEFINITIONS ---
+        let devices = {
+            "ebfc0dbec9868bd91fn21v": {
+                id: "ebfc0dbec9868bd91fn21v",
+                name: "BAÑO",
+                product: "HG067-美规单零火触摸2开T34",
+                room: "Baño Principal",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "eb7cf6af22271b7086dama": {
+                id: "eb7cf6af22271b7086dama",
+                name: "cerradura principal",
+                product: "smartlock",
+                room: "Entrada Principal",
+                type: "lock",
+                status: { locked: true },
+                history: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1] // 1 = locked, 0 = unlocked
+            },
+            "eb6d23ecf9be9e3fd1aydl": {
+                id: "eb6d23ecf9be9e3fd1aydl",
+                name: "Baños",
+                product: "TIC04 INTERRUPTOR DOBLE",
+                room: "Baño 2",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "eb336cd31719ca0f66lqkg": {
+                id: "eb336cd31719ca0f66lqkg",
+                name: "TV",
+                product: "Televisor Inteligente",
+                room: "Sala de Estar",
+                type: "tv",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "eb9be77ecae3064837yxoz": {
+                id: "eb9be77ecae3064837yxoz",
+                name: "pacillo",
+                product: "CB01-SBL",
+                room: "Pasillo Central",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "ebe3a2236d8fb41192cbkj": {
+                id: "ebe3a2236d8fb41192cbkj",
+                name: "Lavadero y cafeteria",
+                product: "CB02-SBL",
+                room: "Cafetería & Lavadero",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "eb026ce6b853f58504jjax": {
+                id: "eb026ce6b853f58504jjax",
+                name: "Patio",
+                product: "CB02-SBL",
+                room: "Patio Exterior",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "eb81eb213ea6311bc5f4x9": {
+                id: "eb81eb213ea6311bc5f4x9",
+                name: "Aire acond habitacion",
+                product: "Aire Acondicionado Split",
+                room: "Habitación Principal",
+                type: "ac",
+                status: { on: false, temp: 22 },
+                history: [22, 22, 22, 22, 22, 22, 22, 22, 22, 22]
+            },
+            "eb45fc166a2b021df7qd7c": {
+                id: "eb45fc166a2b021df7qd7c",
+                name: "control",
+                product: "圆形wifi万能遥控器免配网 (IR)",
+                room: "Sala de Estar",
+                type: "remote",
+                status: { on: true },
+                history: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            },
+            "eb8a029eac3849c00ao5lr": {
+                id: "eb8a029eac3849c00ao5lr",
+                name: "Sensor Temp",
+                product: "温湿度传感器",
+                room: "Habitación Principal",
+                type: "sensor",
+                status: { temp: 21.5, hum: 54 },
+                history: [21.5, 21.6, 21.5, 21.4, 21.5, 21.7, 21.6, 21.5, 21.4, 21.5]
+            },
+            "eb4164efd22d7fd73ffg9j": {
+                id: "eb4164efd22d7fd73ffg9j",
+                name: "Luz calle",
+                product: "CB02-SBL",
+                room: "Calle / Entrada",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "ebb8c6db4c4b3bb1eek3s": {
+                id: "ebb8c6db4c4b3bb1eek3s",
+                name: "habitación principal",
+                product: "CB03-SBL",
+                room: "Habitación Principal",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "ebd912733b8b495a291hfj": {
+                id: "ebd912733b8b495a291hfj",
+                name: "oficina",
+                product: "CB02-SBL",
+                room: "Oficina",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "ebec82a43c5ca0b656c52g": {
+                id: "ebec82a43c5ca0b656c52g",
+                name: "habitación 2",
+                product: "CB02-SBL",
+                room: "Habitación 2",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            },
+            "ebcfafbca9ef2a314c5ziv": {
+                id: "ebcfafbca9ef2a314c5ziv",
+                name: "Sala principal",
+                product: "M604",
+                room: "Sala Principal",
+                type: "light",
+                status: { on: false },
+                history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            }
+        };
+
+        let currentActiveDeviceId = null;
+        let config = {
+            mode: "mock",
+            clientId: "",
+            clientSecret: "",
+            endpoint: "https://openapi.tuyaus.com",
+            schema: ""
+        };
+
+        // --- INICIALIZACIÓN ---
+        window.onload = function() {
+            loadConfig();
+            renderDeviceList();
+            updateVisuals();
+
+            // Loop para simular cambios sutiles y actualización de gráficas (cada 3s)
+            setInterval(simulationLoop, 3000);
+            
+            // Loop para consultar API real si está en modo "live" (cada 5s)
+            setInterval(queryLiveTuyaApi, 5000);
+        };
+
+        // --- CONFIGURATION MANAGEMENT ---
+        function loadConfig() {
+            const saved = localStorage.getItem("tuya_hmi_config");
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById("cfg-mode").value = config.mode;
+                document.getElementById("cfg-client-id").value = config.clientId;
+                document.getElementById("cfg-client-secret").value = config.clientSecret;
+                document.getElementById("cfg-endpoint").value = config.endpoint;
+                document.getElementById("cfg-schema").value = config.schema;
+            }
+            toggleConfigFields();
+            updateSyncBadge();
+        }
+
+        function toggleConfigFields() {
+            const mode = document.getElementById("cfg-mode").value;
+            const fields = document.getElementById("live-config-fields");
+            fields.style.display = (mode === "live") ? "flex" : "none";
+        }
+
+        function openConfigModal() {
+            document.getElementById("config-modal").style.display = "flex";
+        }
+
+        function closeConfigModal() {
+            document.getElementById("config-modal").style.display = "none";
+        }
+
+        function closeConfigModalOnOutside(e) {
+            if (e.target.id === "config-modal") closeConfigModal();
+        }
+
+        function saveConfig() {
+            config.mode = document.getElementById("cfg-mode").value;
+            config.clientId = document.getElementById("cfg-client-id").value;
+            config.clientSecret = document.getElementById("cfg-client-secret").value;
+            config.endpoint = document.getElementById("cfg-endpoint").value;
+            config.schema = document.getElementById("cfg-schema").value;
+
+            localStorage.setItem("tuya_hmi_config", JSON.stringify(config));
+            closeConfigModal();
+            updateSyncBadge();
+            
+            if (config.mode === "live") {
+                addGlobalLog("Configuración cambiada a LIVE. Conectando con tuya_bridge...");
+                testBridgeConnection();
+            } else {
+                addGlobalLog("Configuración cambiada a SIMULACIÓN local.");
+            }
+        }
+
+        function updateSyncBadge() {
+            const badge = document.getElementById("sync-mode-badge");
+            if (config.mode === "live") {
+                badge.innerText = "LIVE TUYA API";
+                badge.style.color = "var(--accent-green)";
+            } else {
+                badge.innerText = "MOCK MODE";
+                badge.style.color = "var(--accent-yellow)";
+            }
+        }
+
+        // --- RENDER SIDEBAR & BLUEPRINT ---
+        function renderDeviceList() {
+            const container = document.getElementById("device-list-dom");
+            container.innerHTML = "";
+
+            Object.values(devices).forEach(dev => {
+                let badgeClass = "device-status-badge";
+                let statusText = "Desconocido";
+
+                if (dev.type === "light" || dev.type === "tv") {
+                    badgeClass += dev.status.on ? " on" : " off";
+                    statusText = dev.status.on ? "ON" : "OFF";
+                } else if (dev.type === "lock") {
+                    badgeClass += dev.status.locked ? " locked" : " unlocked";
+                    statusText = dev.status.locked ? "LOCKED" : "UNLOCKED";
+                } else if (dev.type === "ac") {
+                    badgeClass += dev.status.on ? " on" : " off";
+                    statusText = dev.status.on ? `${dev.status.temp}°C` : "OFF";
+                } else if (dev.type === "sensor") {
+                    statusText = `${dev.status.temp}°C`;
+                } else if (dev.type === "remote") {
+                    statusText = "STANDBY";
+                }
+
+                const card = document.createElement("div");
+                card.className = "device-card";
+                card.onclick = () => openDevice(dev.id);
+                card.innerHTML = `
+                    <div class="device-info">
+                        <span class="device-name">${dev.name}</span>
+                        <span class="device-room">${dev.room}</span>
+                    </div>
+                    <span class="${badgeClass}">${statusText}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateVisuals() {
+            // Update Rooms Fill color depending on lights/AC
+            toggleRoomGlow("room-bano", devices["ebfc0dbec9868bd91fn21v"].status.on, "room-glow-light");
+            toggleRoomGlow("room-banos", devices["eb6d23ecf9be9e3fd1aydl"].status.on, "room-glow-light");
+            toggleRoomGlow("room-pasillo", devices["eb9be77ecae3064837yxoz"].status.on, "room-glow-light");
+            toggleRoomGlow("room-lavadero", devices["ebe3a2236d8fb41192cbkj"].status.on, "room-glow-light");
+            toggleRoomGlow("room-patio", devices["eb026ce6b853f58504jjax"].status.on, "room-glow-light");
+            
+            toggleRoomGlow("room-hab2", devices["ebec82a43c5ca0b656c52g"].status.on, "room-glow-light");
+            toggleRoomGlow("room-oficina", devices["ebd912733b8b495a291hfj"].status.on, "room-glow-light");
+            toggleRoomGlow("room-sala", devices["ebcfafbca9ef2a314c5ziv"].status.on, "room-glow-light");
+            toggleRoomGlow("room-calle", devices["eb4164efd22d7fd73ffg9j"].status.on, "room-glow-light");
+
+            // AC and main light glow logic for Habitación Principal
+            if (devices["ebb8c6db4c4b3bb1eek3s"].status.on) {
+                toggleRoomGlow("room-hab", true, "room-glow-light");
+                toggleRoomGlow("room-hab", false, "room-glow-ac");
+            } else if (devices["eb81eb213ea6311bc5f4x9"].status.on) {
+                toggleRoomGlow("room-hab", false, "room-glow-light");
+                toggleRoomGlow("room-hab", true, "room-glow-ac");
+            } else {
+                toggleRoomGlow("room-hab", false, "room-glow-light");
+                toggleRoomGlow("room-hab", false, "room-glow-ac");
+            }
+
+            // Update Hotspots active styles
+            toggleHotspotStyle("hotspot-ebfc0dbec9868bd91fn21v", devices["ebfc0dbec9868bd91fn21v"].status.on);
+            toggleHotspotStyle("hotspot-eb6d23ecf9be9e3fd1aydl", devices["eb6d23ecf9be9e3fd1aydl"].status.on);
+            toggleHotspotStyle("hotspot-eb9be77ecae3064837yxoz", devices["eb9be77ecae3064837yxoz"].status.on);
+            toggleHotspotStyle("hotspot-ebe3a2236d8fb41192cbkj", devices["ebe3a2236d8fb41192cbkj"].status.on);
+            toggleHotspotStyle("hotspot-eb026ce6b853f58504jjax", devices["eb026ce6b853f58504jjax"].status.on);
+            toggleHotspotStyle("hotspot-eb336cd31719ca0f66lqkg", devices["eb336cd31719ca0f66lqkg"].status.on);
+            toggleHotspotStyle("hotspot-eb81eb213ea6311bc5f4x9", devices["eb81eb213ea6311bc5f4x9"].status.on);
+            
+            toggleHotspotStyle("hotspot-eb4164efd22d7fd73ffg9j", devices["eb4164efd22d7fd73ffg9j"].status.on);
+            toggleHotspotStyle("hotspot-ebb8c6db4c4b3bb1eek3s", devices["ebb8c6db4c4b3bb1eek3s"].status.on);
+            toggleHotspotStyle("hotspot-ebd912733b8b495a291hfj", devices["ebd912733b8b495a291hfj"].status.on);
+            toggleHotspotStyle("hotspot-ebec82a43c5ca0b656c52g", devices["ebec82a43c5ca0b656c52g"].status.on);
+            toggleHotspotStyle("hotspot-ebcfafbca9ef2a314c5ziv", devices["ebcfafbca9ef2a314c5ziv"].status.on);
+
+            // Update Lock icon and hotspot style
+            const lockObj = devices["eb7cf6af22271b7086dama"];
+            const lockHotspot = document.getElementById("hotspot-eb7cf6af22271b7086dama");
+            const lockIcon = document.getElementById("svg-lock-icon");
+            if (lockObj.status.locked) {
+                lockHotspot.className = "hotspot lock active";
+                lockIcon.style.color = "var(--accent-red)";
+                lockIcon.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+            } else {
+                lockHotspot.className = "hotspot lock unlocked";
+                lockIcon.style.color = "var(--accent-green)";
+                lockIcon.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 10V7a5 5 0 0 1 9.5-2.2"/></svg>`;
+            }
+
+            // Update Thermometer overlay text
+            document.getElementById("txt-hab-temp").innerText = `${devices["eb8a029eac3849c00ao5lr"].status.temp.toFixed(1)}°C`;
+        }
+
+        function toggleRoomGlow(roomId, isActive, glowClass) {
+            const el = document.getElementById(roomId);
+            if (isActive) {
+                el.classList.add(glowClass);
+            } else {
+                el.classList.remove(glowClass);
+            }
+        }
+
+        function toggleHotspotStyle(hotspotId, isActive) {
+            const el = document.getElementById(hotspotId);
+            if (isActive) {
+                el.classList.add("active");
+            } else {
+                el.classList.remove("active");
+            }
+        }
+
+        // --- SIMULATION LOOP (MOCK DATA UPDATE) ---
+        function simulationLoop() {
+            if (config.mode !== "mock") return;
+
+            // Simulate Temperature sensor fluctuations
+            let tempSensor = devices["eb8a029eac3849c00ao5lr"];
+            let acDevice = devices["eb81eb213ea6311bc5f4x9"];
+
+            if (acDevice.status.on) {
+                // Cool down room towards target AC temperature
+                let diff = acDevice.status.temp - tempSensor.status.temp;
+                tempSensor.status.temp += diff * 0.1 + (Math.random() * 0.04 - 0.02);
+            } else {
+                // Drift back to ambient 24°C
+                let diff = 24.0 - tempSensor.status.temp;
+                tempSensor.status.temp += diff * 0.05 + (Math.random() * 0.04 - 0.02);
+            }
+            tempSensor.status.hum += (Math.random() * 1.0 - 0.5);
+            tempSensor.status.hum = Math.max(30, Math.min(90, tempSensor.status.hum));
+
+            // Record history
+            Object.values(devices).forEach(dev => {
+                let currentVal = 0;
+                if (dev.type === "light" || dev.type === "tv" || dev.type === "remote") {
+                    currentVal = dev.status.on ? 1 : 0;
+                } else if (dev.type === "lock") {
+                    currentVal = dev.status.locked ? 1 : 0;
+                } else if (dev.type === "ac") {
+                    currentVal = dev.status.on ? dev.status.temp : 0;
+                } else if (dev.type === "sensor") {
+                    currentVal = dev.status.temp;
+                }
+                dev.history.push(currentVal);
+                if (dev.history.length > 20) dev.history.shift();
+            });
+
+            // Update live modal chart if open
+            if (currentActiveDeviceId) {
+                drawModalChart(devices[currentActiveDeviceId].history);
+            }
+
+            renderDeviceList();
+            updateVisuals();
+        }
+
+        // --- MODAL / CONTROL VIEW ---
+        function openDevice(deviceId) {
+            currentActiveDeviceId = deviceId;
+            const dev = devices[deviceId];
+            
+            document.getElementById("m-device-name").innerText = dev.name.toUpperCase();
+            document.getElementById("m-device-product").innerText = dev.product;
+            document.getElementById("m-device-id").innerText = dev.id;
+            
+            // Render Control elements based on Device Type
+            const controlContainer = document.getElementById("m-control-container");
+            controlContainer.innerHTML = "";
+
+            if (dev.type === "light" || dev.type === "tv") {
+                controlContainer.innerHTML = `
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Encendido / Apagado</span>
+                        <label class="switch">
+                            <input type="checkbox" id="m-switch-state" ${dev.status.on ? "checked" : ""} onchange="onModalToggleClick('${dev.id}', 'on')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+            } else if (dev.type === "lock") {
+                controlContainer.innerHTML = `
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Bloqueo de Cerradura</span>
+                        <label class="switch">
+                            <input type="checkbox" id="m-switch-state" ${dev.status.locked ? "checked" : ""} onchange="onModalToggleClick('${dev.id}', 'locked')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                `;
+            } else if (dev.type === "ac") {
+                controlContainer.innerHTML = `
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Encendido Aire</span>
+                        <label class="switch">
+                            <input type="checkbox" id="m-switch-state" ${dev.status.on ? "checked" : ""} onchange="onModalToggleClick('${dev.id}', 'on')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Temperatura de Consigna</span>
+                        <div class="ac-temp-controls">
+                            <button class="btn-temp" onclick="adjustAcTemp(-1)">-</button>
+                            <span class="temp-display" id="m-ac-temp">${dev.status.temp}°C</span>
+                            <button class="btn-temp" onclick="adjustAcTemp(1)">+</button>
+                        </div>
+                    </div>
+                `;
+            } else if (dev.type === "sensor") {
+                controlContainer.innerHTML = `
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Temperatura Ambiente</span>
+                        <span class="temp-display">${dev.status.temp.toFixed(1)}°C</span>
+                    </div>
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Humedad Relativa</span>
+                        <span class="temp-display" style="color: var(--accent-green);">${dev.status.hum.toFixed(0)}%</span>
+                    </div>
+                `;
+            } else if (dev.type === "remote") {
+                controlContainer.innerHTML = `
+                    <div class="modal-control-row">
+                        <span class="modal-control-label">Control Remoto Infrarrojo</span>
+                        <span class="device-status-badge on">STANDBY ONLINE</span>
+                    </div>
+                `;
+            }
+
+            // Draw History chart
+            drawModalChart(dev.history);
+
+            document.getElementById("device-modal").style.display = "flex";
+        }
+
+        function closeDeviceModal() {
+            document.getElementById("device-modal").style.display = "none";
+            currentActiveDeviceId = null;
+        }
+
+        function closeDeviceModalOnOutside(e) {
+            if (e.target.id === "device-modal") closeDeviceModal();
+        }
+
+        function onModalToggleClick(deviceId, field) {
+            const checkbox = document.getElementById("m-switch-state");
+            const val = checkbox.checked;
+            
+            // Apply immediately to state
+            devices[deviceId].status[field] = val;
+            
+            // Add a log entry
+            addGlobalLog(`Cambio de estado manual para ${devices[deviceId].name}: ${field} = ${val}`);
+
+            // Send command if in Live mode
+            if (config.mode === "live") {
+                sendTuyaCommand(deviceId, field, val);
+            }
+
+            renderDeviceList();
+            updateVisuals();
+        }
+
+        function adjustAcTemp(delta) {
+            const dev = devices["eb81eb213ea6311bc5f4x9"];
+            dev.status.temp = Math.max(16, Math.min(30, dev.status.temp + delta));
+            document.getElementById("m-ac-temp").innerText = `${dev.status.temp}°C`;
+            
+            addGlobalLog(`Ajuste de consigna AC a: ${dev.status.temp}°C`);
+
+            if (config.mode === "live") {
+                sendTuyaCommand(dev.id, "temp", dev.status.temp);
+            }
+
+            renderDeviceList();
+            updateVisuals();
+        }
+
+        // --- DRAW SVG MODAL CHART ---
+        function drawModalChart(historyData) {
+            if (historyData.length < 2) return;
+
+            const xStart = 20;
+            const xEnd = 380;
+            const yZero = 100;
+            const yMax = 20;
+            const ySpan = yZero - yMax;
+
+            // Find min/max in data to scale properly
+            let min = Math.min(...historyData);
+            let max = Math.max(...historyData);
+            
+            // If binary data (0 and 1)
+            if (max === min) {
+                max = min + 1;
+                min = min - 1;
+            } else {
+                // Add some margins
+                let diff = max - min;
+                max += diff * 0.1;
+                min -= diff * 0.1;
+            }
+
+            let points = [];
+            let xStep = (xEnd - xStart) / (historyData.length - 1);
+
+            for (let i = 0; i < historyData.length; i++) {
+                let x = xStart + i * xStep;
+                let pct = (historyData[i] - min) / (max - min);
+                let y = yZero - pct * ySpan;
+                points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+            }
+
+            // Path Line
+            let dAttr = "M " + points.join(" L ");
+            document.getElementById("modal-chart-path").setAttribute("d", dAttr);
+
+            // Area under the chart
+            let dArea = dAttr + ` L ${points[points.length-1].split(',')[0]},${yZero} L ${xStart},${yZero} Z`;
+            document.getElementById("modal-chart-area").setAttribute("d", dArea);
+        }
+
+        // Helper logging function
+        function addGlobalLog(message) {
+            console.log(`[HMI LOG] ${message}`);
+        }
+
+        // --- TUYA BRIDGE API COMMUNICATIONS (LIVE MODE) ---
+        function testBridgeConnection() {
+            fetch("http://localhost:3000/api/status")
+                .then(res => res.json())
+                .then(data => {
+                    addGlobalLog("Conexión con tuya_bridge exitosa: " + JSON.stringify(data));
+                    document.getElementById("m-device-api-status").innerText = "Conectado al Puente";
+                    document.getElementById("m-device-api-status").style.color = "var(--accent-green)";
+                })
+                .catch(err => {
+                    addGlobalLog("Error conectando al servidor tuya_bridge local: " + err.message);
+                    document.getElementById("m-device-api-status").innerText = "Sin conexión con tuya_bridge";
+                    document.getElementById("m-device-api-status").style.color = "var(--accent-red)";
+                });
+        }
+
+        function queryLiveTuyaApi() {
+            if (config.mode !== "live") return;
+
+            // Fetch device status list from local bridge
+            fetch("http://localhost:3000/api/devices")
+                .then(res => res.json())
+                .then(apiDevices => {
+                    // Update frontend states based on returned states
+                    apiDevices.forEach(apiDev => {
+                        const localDev = devices[apiDev.id];
+                        if (localDev) {
+                            localDev.status = apiDev.status;
+                            // Add history logic
+                            let currentVal = 0;
+                            if (localDev.type === "light" || localDev.type === "tv" || localDev.type === "remote") {
+                                currentVal = localDev.status.on ? 1 : 0;
+                            } else if (localDev.type === "lock") {
+                                currentVal = localDev.status.locked ? 1 : 0;
+                            } else if (localDev.type === "ac") {
+                                currentVal = localDev.status.on ? localDev.status.temp : 0;
+                            } else if (localDev.type === "sensor") {
+                                currentVal = localDev.status.temp;
+                            }
+                            localDev.history.push(currentVal);
+                            if (localDev.history.length > 20) localDev.history.shift();
+                        }
+                    });
+                    
+                    renderDeviceList();
+                    updateVisuals();
+                    if (currentActiveDeviceId) {
+                        drawModalChart(devices[currentActiveDeviceId].history);
+                    }
+                })
+                .catch(err => {
+                    addGlobalLog("Fallo al actualizar desde Tuya Bridge: " + err.message);
+                });
+        }
+
+        function sendTuyaCommand(deviceId, commandType, value) {
+            if (config.mode !== "live") return;
+
+            fetch(`http://localhost:3000/api/device/${deviceId}/command`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ command: commandType, value: value })
+            })
+            .then(res => res.json())
+            .then(data => {
+                addGlobalLog("Comando Tuya enviado con éxito: " + JSON.stringify(data));
+            })
+            .catch(err => {
+                addGlobalLog("Error al enviar comando a Tuya: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>
